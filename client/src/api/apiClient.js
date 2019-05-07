@@ -1,3 +1,8 @@
+import { toast } from "react-toastify";
+import history from "../history";
+
+export const BASE_URL = process.env.REACT_APP_API_URL + "api";
+
 export function post(url, body) {
   return fetchWrapper(url, "POST", body);
 }
@@ -25,7 +30,13 @@ function fetchWrapper(url, method, body) {
 }
 
 async function handleResponse(response) {
+  if (response.status === 401) {
+    handleUnauthorized();
+    return Promise.reject("Unauthorized.");
+  }
+
   const responseToJson = await response.json();
+
   if (response.ok) {
     return responseToJson;
   } else {
@@ -33,9 +44,19 @@ async function handleResponse(response) {
   }
 }
 
+function handleUnauthorized() {
+  history.push("/login");
+}
+
 function handleError(error) {
-  // eslint-disable-next-line no-console
-  console.error(JSON.stringify(error));
+  if (error) {
+    console.error(JSON.stringify(error));
+  }
+
+  if (error.messages) {
+    toast.error(error.messages.join(", "));
+  }
+
   throw error;
 }
 

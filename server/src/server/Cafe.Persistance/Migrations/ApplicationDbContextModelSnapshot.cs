@@ -66,11 +66,7 @@ namespace Cafe.Persistance.Migrations
 
                     b.Property<decimal>("Price");
 
-                    b.Property<Guid?>("ToGoOrderId");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("ToGoOrderId");
 
                     b.ToTable("MenuItems");
                 });
@@ -101,6 +97,8 @@ namespace Cafe.Persistance.Migrations
 
                     b.Property<Guid?>("BaristaId");
 
+                    b.Property<DateTime>("Date");
+
                     b.Property<int>("Status");
 
                     b.HasKey("Id");
@@ -108,6 +106,19 @@ namespace Cafe.Persistance.Migrations
                     b.HasIndex("BaristaId");
 
                     b.ToTable("ToGoOrders");
+                });
+
+            modelBuilder.Entity("Cafe.Domain.Entities.ToGoOrderMenuItem", b =>
+                {
+                    b.Property<Guid>("MenuItemId");
+
+                    b.Property<Guid>("OrderId");
+
+                    b.HasKey("MenuItemId", "OrderId");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("ToGoOrderMenuItem");
                 });
 
             modelBuilder.Entity("Cafe.Domain.Entities.User", b =>
@@ -282,13 +293,6 @@ namespace Cafe.Persistance.Migrations
                     b.ToTable("AspNetUserTokens");
                 });
 
-            modelBuilder.Entity("Cafe.Domain.Entities.MenuItem", b =>
-                {
-                    b.HasOne("Cafe.Domain.Entities.ToGoOrder")
-                        .WithMany("OrderedItems")
-                        .HasForeignKey("ToGoOrderId");
-                });
-
             modelBuilder.Entity("Cafe.Domain.Entities.Table", b =>
                 {
                     b.HasOne("Cafe.Domain.Entities.Waiter", "Waiter")
@@ -301,6 +305,19 @@ namespace Cafe.Persistance.Migrations
                     b.HasOne("Cafe.Domain.Entities.Barista")
                         .WithMany("CompletedOrders")
                         .HasForeignKey("BaristaId");
+                });
+
+            modelBuilder.Entity("Cafe.Domain.Entities.ToGoOrderMenuItem", b =>
+                {
+                    b.HasOne("Cafe.Domain.Entities.MenuItem", "MenuItem")
+                        .WithMany()
+                        .HasForeignKey("MenuItemId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Cafe.Domain.Entities.ToGoOrder", "Order")
+                        .WithMany("OrderedItems")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>

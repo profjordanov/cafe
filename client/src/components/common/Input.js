@@ -1,21 +1,23 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-const TextInput = ({
+const Input = ({
   name,
   label,
   onChange,
   placeholder,
   value,
   error,
-  isPassword
+  isPassword,
+  isNumber,
+  isReadonly
 }) => {
   let wrapperClass = "form-group";
   if (error && error.length > 0) {
     wrapperClass += " has-error";
   }
 
-  const type = isPassword ? "password" : "text";
+  const type = isPassword ? "password" : isNumber ? "number" : "text";
 
   return (
     <div className={wrapperClass}>
@@ -28,6 +30,7 @@ const TextInput = ({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
+          readOnly={isReadonly}
         />
         {error && <div className="alert alert-danger">{error}</div>}
       </div>
@@ -35,18 +38,21 @@ const TextInput = ({
   );
 };
 
-TextInput.propTypes = {
+Input.propTypes = {
   name: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
   placeholder: PropTypes.string,
   value: PropTypes.string,
   error: PropTypes.string,
-  isPassword: PropTypes.bool.isRequired
+  isPassword: PropTypes.bool.isRequired,
+  isReadonly: PropTypes.bool.isRequired,
+  isNumber: PropTypes.bool
 };
 
-TextInput.defaultProps = {
-  isPassword: false
+Input.defaultProps = {
+  isPassword: false,
+  isReadonly: false
 };
 
-export default TextInput;
+export default Input;

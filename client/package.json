@@ -3,16 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "react-scripts": "2.1.8",
+    "@aspnet/signalr": "^1.1.4",
+    "@khanacademy/react-multi-select": "^0.3.2",
+    "@opuscapita/react-signalr": "^3.3.0",
     "bootstrap": "4.3.1",
     "prop-types": "15.7.2",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
     "react-redux": "6.0.1",
     "react-router-dom": "5.0.0",
-    "react-toastify": "4.5.2",
+    "react-scripts": "2.1.8",
+    "react-toastify": "^4.5.2",
     "redux": "4.0.1",
-    "redux-thunk": "2.3.0"
+    "redux-thunk": "2.3.0",
+    "uuid": "^3.3.2"
   },
   "proxy": "http://localhost:5000/api",
   "devDependencies": {

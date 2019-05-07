@@ -1,11 +1,15 @@
 ﻿using AutoMapper;
 using Cafe.Api.Configuration;
 using Cafe.Api.Filters;
+using Cafe.Api.Hubs;
 using Cafe.Api.ModelBinders;
 using Cafe.Core.AuthContext;
 using Cafe.Core.AuthContext.Commands;
 using Cafe.Core.AuthContext.Configuration;
+using Cafe.Core.TableContext.Commands;
 using Cafe.Domain.Entities;
+using Cafe.Persistance.EntityFramework;
+using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -41,9 +45,9 @@ namespace Cafe.Api
 
         public void ConfigureServices(IServiceCollection services)
         {
-			services.AddDbContext(Configuration.GetConnectionString("DefaultConnection"));
+            services.AddDbContext(Configuration.GetConnectionString("DefaultConnection"));
 
-			services.AddAutoMapper(cfg =>
+            services.AddAutoMapper(cfg =>
             {
                 cfg.AddProfiles(typeof(MappingProfile).Assembly);
             });
@@ -79,6 +83,7 @@ namespace Cafe.Api
             services.AddMarten(Configuration);
             services.AddCqrs();
             services.AddMediatR();
+            services.AddSignalR();
 
             services.AddMvc(options =>
             {
@@ -86,19 +91,29 @@ namespace Cafe.Api
                 options.Filters.Add<ExceptionFilter>();
                 options.Filters.Add<ModelStateFilter>();
             })
-            .AddFluentValidation(fv => fv.RegisterValidatorsFromAssemblyContaining<RegisterValidator>())
+            .AddFluentValidation(fv =>
+            {
+                fv.RegisterValidatorsFromAssemblyContaining<RegisterValidator>();
+            })
             .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, UserManager<User> userManager)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, UserManager<User> userManager, ApplicationDbContext dbContext)
         {
             if (!env.IsDevelopment())
             {
                 app.UseHsts();
             }
-            else
+            else if (env.IsDevelopment())
             {
-                app.AddDefaultAdminAccountIfNoneExisting(userManager, Configuration).Wait();
+                app.UseCors(builder => builder
+                    .WithOrigins("http://localhost:3000")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials());
+
+                DatabaseConfiguration.RevertDatabaseToInitialState(dbContext);
+                DatabaseConfiguration.AddDefaultAdminAccountIfNoneExisting(userManager, Configuration).Wait();
             }
 
             loggerFactory.AddLogging(Configuration.GetSection("Logging"));
@@ -107,6 +122,14 @@ namespace Cafe.Api
             app.UseSwagger("Cafe");
             app.UseStaticFiles();
             app.UseAuthentication();
+
+            // It's very important that UseAuthentication is called before UseSignalR
+            app.UseSignalR(routes =>
+            {
+                routes.MapHub<ConfirmedOrdersHub>("/confirmedOrders");
+                routes.MapHub<HiredWaitersHub>("/hiredWaiters");
+            });
+
             app.UseMvc();
         }
     }

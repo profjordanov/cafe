@@ -6,36 +6,42 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System;
-using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 
 namespace Cafe.Tests
 {
     public class SliceFixture
     {
-        private static readonly IConfigurationRoot _configuration;
+        public static readonly string BaseUrl;
+        private static readonly IConfiguration _configuration;
         private static readonly IServiceScopeFactory _scopeFactory;
 
         static SliceFixture()
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", true, true)
-                .AddEnvironmentVariables();
+            BaseUrl = $"http://localhost:{GetFreeTcpPort()}";
 
-            _configuration = builder.Build();
+            var webhost = Program
+                .CreateWebHostBuilder(new string[] { "--environment", "IntegrationTesting" }, BaseUrl)
+                .Build();
 
-            var startup = new Startup(_configuration);
-            var services = new ServiceCollection();
+            webhost.Start();
 
-            startup.ConfigureServices(services);
+            var scopeFactory = (IServiceScopeFactory)webhost.Services.GetService(typeof(IServiceScopeFactory));
 
-            var provider = services.BuildServiceProvider();
+            _scopeFactory = scopeFactory;
 
-            _scopeFactory = provider.GetService<IServiceScopeFactory>();
+            using (var scope = scopeFactory.CreateScope())
+            {
+                _configuration = scope.ServiceProvider.GetService<IConfiguration>();
+            }
 
-            var dbContext = provider.GetService<ApplicationDbContext>();
-            dbContext.Database.EnsureCreated();
+            using (var scope = scopeFactory.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetService<ApplicationDbContext>();
+                dbContext.Database.EnsureCreated();
+            }
 
             DocumentStore.For(options =>
             {
@@ -51,8 +57,8 @@ namespace Cafe.Tests
             });
         }
 
-        public static string RelationalDbConnectionString => _configuration.GetConnectionString("DefaultConnection");
         public static string EventStoreConnectionString => _configuration.GetSection("EventStore")["ConnectionString"];
+        public static string RelationalDbConnectionString => _configuration.GetConnectionString("DefaultConnection");
 
         public Task ExecuteDbContextAsync(Func<ApplicationDbContext, Task> action) =>
             ExecuteScopeAsync(sp =>
@@ -102,6 +108,12 @@ namespace Cafe.Tests
             }
         }
 
+        public string GetFullServerUrl(string route)
+        {
+            route = route.TrimStart('/', '\\');
+            return $"{BaseUrl}/{route}";
+        }
+
         public Task<TResponse> SendAsync<TResponse>(IRequest<TResponse> request)
         {
             return ExecuteScopeAsync(sp =>
@@ -135,6 +147,15 @@ namespace Cafe.Tests
 
                 return Task.CompletedTask;
             });
+        }
+
+        private static int GetFreeTcpPort()
+        {
+            TcpListener listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            int port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            listener.Stop();
+            return port;
         }
     }
 }
