@@ -10,11 +10,11 @@ namespace Cafe.Tests.Business.TableContext
 {
     public class GetAllTablesHandlerTests : ResetDatabaseLifetime
     {
-        private readonly SliceFixture _fixture;
+        private readonly AppFixture _fixture;
 
         public GetAllTablesHandlerTests()
         {
-            _fixture = new SliceFixture();
+            _fixture = new AppFixture();
         }
 
         [Theory]
@@ -34,14 +34,13 @@ namespace Cafe.Tests.Business.TableContext
             });
 
             // Act
-            var result = await _fixture.SendAsync(query);
+            var tables = await _fixture.SendAsync(query);
 
             // Assert
-            result.Exists(tables =>
-                tables.Count == tablesToAdd.Length &&
-                tables.All(t => tablesToAdd.Any(addedTable => t.Number == addedTable.Number &&
-                                                              t.WaiterId == addedTable.WaiterId &&
-                                                              t.WaiterShortName == addedTable.Waiter.ShortName)))
+            (tables.Count == tablesToAdd.Length &&
+             tables.All(t => tablesToAdd.Any(addedTable => t.Number == addedTable.Number &&
+                                                           t.WaiterId == addedTable.WaiterId &&
+                                                           t.WaiterShortName == addedTable.Waiter.ShortName)))
             .ShouldBeTrue();
         }
 
@@ -53,10 +52,10 @@ namespace Cafe.Tests.Business.TableContext
             // Purposefully skipping adding any tables
 
             // Act
-            var result = await _fixture.SendAsync(query);
+            var tables = await _fixture.SendAsync(query);
 
             // Assert
-            result.Exists(tables => tables.Count == 0).ShouldBeTrue();
+            (tables.Count == 0).ShouldBeTrue();
         }
     }
 }

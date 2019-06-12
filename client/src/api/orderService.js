@@ -1,21 +1,22 @@
 import * as apiClient from "./apiClient";
 import * as webSocketClient from "./webSocketClient";
+import { joinUrlWithRoute } from "../utils/urlUtils";
 
 const uuidv4 = require("uuid/v4");
 
-const baseUrl = apiClient.BASE_URL + "/order/";
+const baseUrl = joinUrlWithRoute(apiClient.BASE_URL, "/order/");
 
 export function getOrders() {
   return apiClient.get(baseUrl);
 }
 
 export function completeToGoOrder(orderId) {
-  const url = baseUrl + "complete";
+  const url = joinUrlWithRoute(baseUrl, "complete");
   return apiClient.put(url, { orderId });
 }
 
 export function confirmToGoOrder(pricePaid, orderId) {
-  const url = baseUrl + "confirm";
+  const url = joinUrlWithRoute(baseUrl, "confirm");
   return apiClient.put(url, { orderId, pricePaid });
 }
 
@@ -24,11 +25,12 @@ export function issueToGoOrder(itemNumbers) {
 }
 
 export function onOrderConfirmed(callback) {
-  return webSocketClient.subscribeTo(
-    "confirmedOrders",
-    "OrderConfirmed",
-    ({ order }) => {
-      callback(order);
+  return webSocketClient.subscribeTo("confirmedOrders", [
+    {
+      eventName: "OrderConfirmed",
+      callback: ({ order }) => {
+        callback(order);
+      }
     }
-  );
+  ]);
 }

@@ -1,44 +1,26 @@
-﻿using AutoMapper;
-using Cafe.Core;
+﻿using Cafe.Core;
 using Cafe.Core.OrderContext.Queries;
 using Cafe.Domain;
-using Cafe.Domain.Entities;
+using Cafe.Domain.Repositories;
 using Cafe.Domain.Views;
-using Cafe.Persistance.EntityFramework;
-using Microsoft.EntityFrameworkCore;
 using Optional;
-using Optional.Async;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Cafe.Business.OrderContext.QueryHandlers
 {
-    public class GetToGoOrderHandler : IQueryHandler<GetToGoOrder, ToGoOrderView>
+    public class GetToGoOrderHandler : IQueryHandler<GetToGoOrder, Option<ToGoOrderView, Error>>
     {
-        private readonly ApplicationDbContext _dbContext;
-        private readonly IMapper _mapper;
+        private readonly IToGoOrderViewRepository _toGoOrderRepository;
 
-        public GetToGoOrderHandler(ApplicationDbContext dbContext, IMapper mapper)
+        public GetToGoOrderHandler(IToGoOrderViewRepository toGoOrderRepository)
         {
-            _dbContext = dbContext;
-            _mapper = mapper;
+            _toGoOrderRepository = toGoOrderRepository;
         }
 
         public async Task<Option<ToGoOrderView, Error>> Handle(GetToGoOrder request, CancellationToken cancellationToken) =>
-            (await GetOrderIfExists(request.Id, cancellationToken))
-                .Map(_mapper.Map<ToGoOrderView>);
-
-        private async Task<Option<ToGoOrder, Error>> GetOrderIfExists(Guid orderId, CancellationToken cancellationToken)
-        {
-            var order = await _dbContext
-                .ToGoOrders
-                .Include(o => o.OrderedItems)
-                    .ThenInclude(i => i.MenuItem)
-                .FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
-
-            return order
-                .SomeNotNull(Error.NotFound($"Order {orderId} was not found."));
-        }
+            (await _toGoOrderRepository
+                .Get(request.Id))
+                .WithException(Error.NotFound($"Order {request.Id} was not found."));
     }
 }

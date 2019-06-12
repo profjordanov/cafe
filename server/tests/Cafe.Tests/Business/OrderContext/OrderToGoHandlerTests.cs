@@ -16,12 +16,12 @@ namespace Cafe.Tests.Business.OrderContext
 {
     public class OrderToGoHandlerTests : ResetDatabaseLifetime
     {
-        private readonly SliceFixture _fixture;
+        private readonly AppFixture _fixture;
         private readonly ToGoOrderTestsHelper _helper;
 
         public OrderToGoHandlerTests()
         {
-            _fixture = new SliceFixture();
+            _fixture = new AppFixture();
             _helper = new ToGoOrderTestsHelper(_fixture);
         }
 
@@ -51,6 +51,32 @@ namespace Cafe.Tests.Business.OrderContext
                 order => order.Status == ToGoOrderStatus.Pending &&
                          order.OrderedItems.Count == menuItemNumbers.Length &&
                          order.OrderedItems.All(i => menuItemNumbers.Contains(i.Number)));
+        }
+
+        [Theory]
+        [CustomizedAutoData]
+        public async Task CanOrderMultiplesOfSameItems(MenuItem[] menuItems)
+        {
+            // Arrange
+            const int timesToOrderEachItem = 3;
+
+            await _helper.AddMenuItems(menuItems);
+
+            var commandToTest = new OrderToGo
+            {
+                Id = Guid.NewGuid(),
+                ItemNumbers = menuItems
+                    .SelectMany(i => Enumerable.Repeat(i.Number, timesToOrderEachItem))
+                    .ToList()
+            };
+
+            // Act
+            var result = await _fixture.SendAsync(commandToTest);
+
+            // Assert
+            await _helper.AssertOrderExists(commandToTest.Id, order =>
+                order.OrderedItems.Count == menuItems.Length * timesToOrderEachItem &&
+                menuItems.All(i => order.OrderedItems.Any(oi => oi.Number == i.Number)));
         }
 
         [Theory]

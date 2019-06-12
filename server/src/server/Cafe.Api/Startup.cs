@@ -1,15 +1,13 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Cafe.Api.Configuration;
 using Cafe.Api.Filters;
+using Cafe.Api.Hateoas.Resources.Tab;
 using Cafe.Api.Hubs;
-using Cafe.Api.ModelBinders;
 using Cafe.Core.AuthContext;
 using Cafe.Core.AuthContext.Commands;
 using Cafe.Core.AuthContext.Configuration;
-using Cafe.Core.TableContext.Commands;
 using Cafe.Domain.Entities;
 using Cafe.Persistance.EntityFramework;
-using FluentValidation;
 using FluentValidation.AspNetCore;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -30,17 +28,6 @@ namespace Cafe.Api
             Configuration = configuration;
         }
 
-        public Startup(IHostingEnvironment env)
-        {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: true)
-                .AddEnvironmentVariables();
-
-            Configuration = builder.Build();
-        }
-
         public IConfiguration Configuration { get; }
 
         public void ConfigureServices(IServiceCollection services)
@@ -50,10 +37,13 @@ namespace Cafe.Api
             services.AddAutoMapper(cfg =>
             {
                 cfg.AddProfiles(typeof(MappingProfile).Assembly);
+                cfg.AddProfiles(typeof(TabMappingProfile).Assembly);
             });
 
             services.AddSwagger();
             services.AddCommonServices();
+
+            services.AddHateoas();
 
             services.AddJwtIdentity(
                 Configuration.GetSection(nameof(JwtConfiguration)),
@@ -80,14 +70,16 @@ namespace Cafe.Api
 
             services.AddLogging(logBuilder => logBuilder.AddSerilog(dispose: true));
 
+            services.AddTransient<DatabaseSeeder>();
+
             services.AddMarten(Configuration);
             services.AddCqrs();
             services.AddMediatR();
             services.AddSignalR();
+            services.AddRepositories();
 
             services.AddMvc(options =>
             {
-                options.ModelBinderProviders.Insert(0, new OptionModelBinderProvider());
                 options.Filters.Add<ExceptionFilter>();
                 options.Filters.Add<ModelStateFilter>();
             })
@@ -98,27 +90,32 @@ namespace Cafe.Api
             .SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, UserManager<User> userManager, ApplicationDbContext dbContext)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory, UserManager<User> userManager, ApplicationDbContext dbContext, DatabaseSeeder seeder)
         {
+            dbContext.Database.EnsureCreated();
+            DatabaseConfiguration.EnsureEventStoreIsCreated(Configuration);
+
+            if (!env.IsEnvironment(Environment.IntegrationTests))
+            {
+                DatabaseConfiguration.AddDefaultAdminAccountIfNoneExisting(userManager, Configuration).Wait();
+                seeder.SeedDatabase().Wait();
+            }
+
             if (!env.IsDevelopment())
             {
                 app.UseHsts();
+                app.UseHttpsRedirection();
             }
-            else if (env.IsDevelopment())
-            {
-                app.UseCors(builder => builder
-                    .WithOrigins("http://localhost:3000")
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials());
 
-                DatabaseConfiguration.RevertDatabaseToInitialState(dbContext);
-                DatabaseConfiguration.AddDefaultAdminAccountIfNoneExisting(userManager, Configuration).Wait();
-            }
+            app.UseCors(builder => builder
+                .SetIsOriginAllowedToAllowWildcardSubdomains()
+                .WithOrigins("http://localhost:3000", "https://*.devadventures.net")
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials());
 
             loggerFactory.AddLogging(Configuration.GetSection("Logging"));
 
-            app.UseHttpsRedirection();
             app.UseSwagger("Cafe");
             app.UseStaticFiles();
             app.UseAuthentication();
@@ -128,6 +125,7 @@ namespace Cafe.Api
             {
                 routes.MapHub<ConfirmedOrdersHub>("/confirmedOrders");
                 routes.MapHub<HiredWaitersHub>("/hiredWaiters");
+                routes.MapHub<TableActionsHub>("/tableActions");
             });
 
             app.UseMvc();

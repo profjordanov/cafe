@@ -11,12 +11,12 @@ namespace Cafe.Tests.Business.MenuContext
 {
     public class GetAllMenuItemsHandlerTests : ResetDatabaseLifetime
     {
-        private readonly SliceFixture _fixture;
+        private readonly AppFixture _fixture;
         private readonly TabTestsHelper _helper;
 
         public GetAllMenuItemsHandlerTests()
         {
-            _fixture = new SliceFixture();
+            _fixture = new AppFixture();
             _helper = new TabTestsHelper(_fixture);
         }
 
@@ -28,14 +28,13 @@ namespace Cafe.Tests.Business.MenuContext
             await _helper.AddMenuItems(menuItems);
 
             // Act
-            var result = await _fixture.SendAsync(query);
+            var items = await _fixture.SendAsync(query);
 
             // Assert
-            result.Exists(items =>
-                items.Count == menuItems.Length &&
-                items.All(i => menuItems.Any(mi => i.Number == mi.Number &&
-                                                   i.Description == mi.Description &&
-                                                   i.Price == mi.Price)))
+            (items.Count == menuItems.Length &&
+             items.All(i => menuItems.Any(mi => i.Number == mi.Number &&
+                                                i.Description == mi.Description &&
+                                                i.Price == mi.Price)))
             .ShouldBeTrue();
         }
 
@@ -47,10 +46,10 @@ namespace Cafe.Tests.Business.MenuContext
             // Purposefully skipping adding any items
 
             // Act
-            var result = await _fixture.SendAsync(query);
+            var items = await _fixture.SendAsync(query);
 
             // Assert
-            result.Exists(items => items.Count == 0).ShouldBeTrue();
+            (items.Count == 0).ShouldBeTrue();
         }
     }
 }

@@ -10,11 +10,11 @@ namespace Cafe.Tests.Business.ManagerContext
 {
     public class GetEmployedManagersHandlerTests : ResetDatabaseLifetime
     {
-        private readonly SliceFixture _fixture;
+        private readonly AppFixture _fixture;
 
         public GetEmployedManagersHandlerTests()
         {
-            _fixture = new SliceFixture();
+            _fixture = new AppFixture();
         }
 
         [Theory]
@@ -31,13 +31,13 @@ namespace Cafe.Tests.Business.ManagerContext
             var queryToTest = new GetEmployedManagers();
 
             // Act
-            var result = await _fixture.SendAsync(queryToTest);
+            var managers = await _fixture.SendAsync(queryToTest);
 
             // Assert
-            result.Exists(managersResult =>
-                managersResult.All(m => managersToAdd
-                    .Any(addedManager => m.Id == addedManager.Id &&
-                                         m.ShortName == addedManager.ShortName)))
+            managers.All(m => managersToAdd
+                .Any(addedManager =>
+                    m.Id == addedManager.Id &&
+                    m.ShortName == addedManager.ShortName))
             .ShouldBeTrue();
         }
 
@@ -49,10 +49,10 @@ namespace Cafe.Tests.Business.ManagerContext
             // Purposefully not adding any managers
 
             // Act
-            var result = await _fixture.SendAsync(query);
+            var managersResult = await _fixture.SendAsync(query);
 
             // Assert
-            result.Exists(managersResult => managersResult.Count == 0).ShouldBeTrue();
+            (managersResult.Count == 0).ShouldBeTrue();
         }
     }
 }

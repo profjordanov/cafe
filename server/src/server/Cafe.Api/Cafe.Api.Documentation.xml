@@ -18,6 +18,11 @@
             <response code="200">If the credentials have a match.</response>
             <response code="400">If the credentials don't match/don't meet the requirements.</response>
         </member>
+        <member name="M:Cafe.Api.Controllers.AuthController.Logout">
+            <summary>
+            Logout. (unsets the auth cookie)
+            </summary>
+        </member>
         <member name="M:Cafe.Api.Controllers.AuthController.Register(Cafe.Core.AuthContext.Commands.Register)">
             <summary>
             Register.
@@ -72,6 +77,11 @@
             Hires a cashier in the café.
             </summary>
         </member>
+        <member name="M:Cafe.Api.Controllers.HomeController.ApiHome">
+            <summary>
+            The root of the API.
+            </summary>
+        </member>
         <member name="M:Cafe.Api.Controllers.ManagerController.GetEmployedManagers">
             <summary>
             Retrieves all currently employed managers.
@@ -98,14 +108,9 @@
             Retrieves a to-go order by id.
             </summary>
         </member>
-        <member name="M:Cafe.Api.Controllers.OrderController.GetAllOrders">
+        <member name="M:Cafe.Api.Controllers.OrderController.GetAllOrders(System.Nullable{Cafe.Domain.Entities.ToGoOrderStatus})">
             <summary>
             Retrieves all orders.
-            </summary>
-        </member>
-        <member name="M:Cafe.Api.Controllers.OrderController.GetOrdersByStatus(Cafe.Domain.Entities.ToGoOrderStatus)">
-            <summary>
-            Retrieves orders for a given status.
             </summary>
         </member>
         <member name="M:Cafe.Api.Controllers.OrderController.OrderToGo(Cafe.Core.OrderContext.Commands.OrderToGo)">
@@ -123,14 +128,29 @@
             Completes a to-go order.
             </summary>
         </member>
-        <member name="M:Cafe.Api.Controllers.TabController.OpenTab(Cafe.Core.TabContext.Commands.OpenTab)">
-            <summary>
-            Opens a new tab on a given table.
-            </summary>
-        </member>
         <member name="M:Cafe.Api.Controllers.TabController.CloseTab(Cafe.Core.TabContext.Commands.CloseTab)">
             <summary>
             Closes a tab.
+            </summary>
+        </member>
+        <member name="M:Cafe.Api.Controllers.TabController.GetAllOpenTabs">
+            <summary>
+            Retrieves all open tabs.
+            </summary>
+        </member>
+        <member name="M:Cafe.Api.Controllers.TabController.GetTabHistory">
+            <summary>
+            Retrieves all closed tabs.
+            </summary>
+        </member>
+        <member name="M:Cafe.Api.Controllers.TabController.GetTabView(System.Guid)">
+            <summary>
+            Retrieves a tab by id.
+            </summary>
+        </member>
+        <member name="M:Cafe.Api.Controllers.TabController.OpenTab(Cafe.Core.TabContext.Commands.OpenTab)">
+            <summary>
+            Opens a new tab on a given table.
             </summary>
         </member>
         <member name="M:Cafe.Api.Controllers.TabController.OrderMenuItems(Cafe.Core.TabContext.Commands.OrderMenuItems)">
@@ -143,6 +163,11 @@
             Rejects a list of menu items for a given tab.
             </summary>
         </member>
+        <member name="M:Cafe.Api.Controllers.TabController.ServeMenuItems(Cafe.Core.TabContext.Commands.ServeMenuItems)">
+            <summary>
+            Serves a list of menu items.
+            </summary>
+        </member>
         <member name="M:Cafe.Api.Controllers.TableController.GetAllTables">
             <summary>
             Retrieves a list of the tables in the café.
@@ -151,6 +176,16 @@
         <member name="M:Cafe.Api.Controllers.TableController.AddTable(Cafe.Core.TableContext.Commands.AddTable)">
             <summary>
             Adds a table to the café.
+            </summary>
+        </member>
+        <member name="M:Cafe.Api.Controllers.TableController.CallWaiter(System.Int32)">
+            <summary>
+            Calls the waiter assigned to the table number provided.
+            </summary>
+        </member>
+        <member name="M:Cafe.Api.Controllers.TableController.RequestBill(System.Int32)">
+            <summary>
+            Requests the bill from the waiter assigned to the table number provided.
             </summary>
         </member>
         <member name="M:Cafe.Api.Controllers.WaiterController.GetEmployedWaiters">
@@ -168,15 +203,10 @@
             Assigns a table to a waiter.
             </summary>
         </member>
-        <member name="M:Cafe.Api.Controllers.ApiController.Ok(MediatR.Unit)">
+        <member name="M:Cafe.Api.Program.BuildWebHost(System.String[])">
             <summary>
-            Enables using method groups when matching on Unit.
-            </summary>
-        </member>
-        <member name="T:Cafe.Api.OperationFilters.OptionOperationFilter">
-            <summary>
-            This operation filter only works on <see cref="T:Optional.Option"/> types that are contained in a class.
-            Optional values that are put as type parameters will not be properly displayed in Swagger, although they will work.
+            To be used by EF tooling until I implement IDesignTimeDbContextFactory.
+            https://wildermuth.com/2017/07/06/Program-cs-in-ASP-NET-Core-2-0
             </summary>
         </member>
     </members>

@@ -12,9 +12,15 @@ WORKDIR /src
 
 COPY --from=config /src .
 
-RUN dotnet restore Cafe.sln
-RUN dotnet build Cafe.sln 
+# RUN dotnet restore Cafe.sln
+# RUN dotnet build Cafe.sln 
+
+RUN ls
 
 WORKDIR /src/tests/Cafe.Tests
 
-CMD ["dotnet", "test", "--logger:\"console;verbosity=normal\""]
+RUN ls
+
+RUN chmod +x run-tests-with-coverage-report.sh
+CMD bash run-tests-with-coverage-report.sh \
+    && cp coverage.* /coverage

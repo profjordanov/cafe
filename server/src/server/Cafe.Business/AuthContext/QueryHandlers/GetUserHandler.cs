@@ -1,42 +1,25 @@
-﻿using AutoMapper;
-using Cafe.Core;
+﻿using Cafe.Core;
 using Cafe.Core.AuthContext.Queries;
 using Cafe.Domain;
-using Cafe.Domain.Entities;
+using Cafe.Domain.Repositories;
 using Cafe.Domain.Views;
-using Cafe.Persistance.EntityFramework;
-using Microsoft.EntityFrameworkCore;
 using Optional;
-using Optional.Async;
-using System;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Cafe.Business.AuthContext.QueryHandlers
 {
-    public class GetUserHandler : IQueryHandler<GetUser, UserView>
+    public class GetUserHandler : IQueryHandler<GetUser, Option<UserView, Error>>
     {
-        private readonly ApplicationDbContext _dbContext;
-        private readonly IMapper _mapper;
+        private readonly IUserViewRepository _userViewRepository;
 
-        public GetUserHandler(IMapper mapper, ApplicationDbContext dbContext)
+        public GetUserHandler(IUserViewRepository userViewRepository)
         {
-            _mapper = mapper;
-            _dbContext = dbContext;
+            _userViewRepository = userViewRepository;
         }
 
-        public Task<Option<UserView, Error>> Handle(GetUser request, CancellationToken cancellationToken) =>
-            GetUser(request.Id).MapAsync(async u =>
-            _mapper.Map<UserView>(u));
-
-        private async Task<Option<User, Error>> GetUser(Guid id)
-        {
-            var user = await _dbContext
-                .Users
-                .FirstOrDefaultAsync(u => u.Id == id);
-
-            return user
-                .SomeNotNull(Error.NotFound($"No user with an id of {id} was found."));
-        }
+        public async Task<Option<UserView, Error>> Handle(GetUser request, CancellationToken cancellationToken) =>
+            (await _userViewRepository.Get(request.Id))
+                .WithException(Error.NotFound($"No user with id {request.Id} was found."));
     }
 }

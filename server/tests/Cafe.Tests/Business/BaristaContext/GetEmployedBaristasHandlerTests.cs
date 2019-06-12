@@ -10,11 +10,11 @@ namespace Cafe.Tests.Business.BaristaContext
 {
     public class GetEmployedBaristasHandlerTests : ResetDatabaseLifetime
     {
-        private readonly SliceFixture _fixture;
+        private readonly AppFixture _fixture;
 
         public GetEmployedBaristasHandlerTests()
         {
-            _fixture = new SliceFixture();
+            _fixture = new AppFixture();
         }
 
         [Theory]
@@ -30,19 +30,18 @@ namespace Cafe.Tests.Business.BaristaContext
             });
 
             // Act
-            var result = await _fixture.SendAsync(query);
+            var baristas = await _fixture.SendAsync(query);
 
             // Assert
-            result.Exists(baristas =>
-                baristas.Count == baristasToHire.Length &&
-                baristas.All(b => baristasToHire.Any(hiredBarista =>
-                    b.Id == hiredBarista.Id &&
-                    b.ShortName == hiredBarista.ShortName &&
-                    b.CompletedOrders.Count == hiredBarista.CompletedOrders.Count &&
-                    b.CompletedOrders.All(ov => hiredBarista.CompletedOrders.Any(o =>
-                        o.Id == ov.Id &&
-                        o.Status == ov.Status &&
-                        o.OrderedItems.Count == ov.OrderedItems.Count)))))
+            (baristas.Count == baristasToHire.Length &&
+             baristas.All(b => baristasToHire.Any(hiredBarista =>
+                 b.Id == hiredBarista.Id &&
+                 b.ShortName == hiredBarista.ShortName &&
+                 b.CompletedOrders.Count == hiredBarista.CompletedOrders.Count &&
+                 b.CompletedOrders.All(ov => hiredBarista.CompletedOrders.Any(o =>
+                     o.Id == ov.Id &&
+                     o.Status == ov.Status &&
+                     o.OrderedItems.Count == ov.OrderedItems.Count)))))
             .ShouldBeTrue();
         }
 
@@ -54,10 +53,10 @@ namespace Cafe.Tests.Business.BaristaContext
             // Purposefully not hiring any baristas
 
             // Act
-            var result = await _fixture.SendAsync(query);
+            var baristas = await _fixture.SendAsync(query);
 
             // Assert
-            result.Exists(baristas => baristas.Count == 0).ShouldBeTrue();
+            (baristas.Count == 0).ShouldBeTrue();
         }
     }
 }

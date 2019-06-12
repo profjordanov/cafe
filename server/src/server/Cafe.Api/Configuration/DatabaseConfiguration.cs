@@ -1,10 +1,10 @@
 ﻿using Cafe.Core.AuthContext;
 using Cafe.Domain.Entities;
-using Cafe.Persistance.EntityFramework;
+using Marten;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Optional;
 using System;
-using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -12,92 +12,9 @@ namespace Cafe.Api.Configuration
 {
     public static class DatabaseConfiguration
     {
-        public static void RevertDatabaseToInitialState(ApplicationDbContext dbContext)
+        public static async Task<Option<(string Email, string Password)>> AddDefaultAdminAccountIfNoneExisting(UserManager<User> userManager, IConfiguration configuration)
         {
-            var menuItems = new List<MenuItem>
-            {
-                new MenuItem
-                {
-                    Id = Guid.NewGuid(),
-                    Description = "Cofee",
-                    Number = 1,
-                    Price = 1
-                },
-                new MenuItem
-                {
-                    Id = Guid.NewGuid(),
-                    Description = "Tea",
-                    Number = 2,
-                    Price = 1
-                },
-                new MenuItem
-                {
-                    Id = Guid.NewGuid(),
-                    Description = "Coke",
-                    Number = 3,
-                    Price = 2
-                },
-            };
-
-            var waiters = new List<Waiter>
-            {
-                new Waiter
-                {
-                    Id = Guid.NewGuid(),
-                    ShortName = "Pete"
-                }
-            };
-
-            var tables = new List<Table>
-            {
-                new Table
-                {
-                    Id = Guid.NewGuid(),
-                    Number = 1,
-                    WaiterId = waiters[0].Id
-                }
-            };
-
-            var baristas = new List<Barista>
-            {
-                new Barista
-                {
-                    Id = Guid.NewGuid(),
-                    ShortName = "John"
-                }
-            };
-
-            var cashiers = new List<Cashier>
-            {
-                new Cashier
-                {
-                    Id = Guid.NewGuid(),
-                    ShortName = "Steve"
-                }
-            };
-
-            dbContext.MenuItems.RemoveRange(dbContext.MenuItems);
-            dbContext.Waiters.RemoveRange(dbContext.Waiters);
-            dbContext.Tables.RemoveRange(dbContext.Tables);
-            dbContext.Baristas.RemoveRange(dbContext.Baristas);
-            dbContext.Cashiers.RemoveRange(dbContext.Cashiers);
-            dbContext.ToGoOrders.RemoveRange(dbContext.ToGoOrders);
-
-            dbContext.MenuItems.AddRange(menuItems);
-            dbContext.Waiters.AddRange(waiters);
-            dbContext.Tables.AddRange(tables);
-            dbContext.Baristas.AddRange(baristas);
-            dbContext.Cashiers.AddRange(cashiers);
-
-            dbContext.SaveChanges();
-        }
-
-        public static async Task<(string Email, string Password)> AddDefaultAdminAccountIfNoneExisting(UserManager<User> userManager, IConfiguration configuration)
-        {
-            var adminSection = configuration.GetSection("DefaultAdminAccount");
-
-            var adminEmail = adminSection["Email"];
-            var adminPassword = adminSection["Password"];
+            var (adminEmail, adminPassword) = configuration.GetAdminCredentials();
 
             if (!await AccountExists(adminEmail, userManager))
             {
@@ -115,9 +32,27 @@ namespace Cafe.Api.Configuration
                 var isAdminClaim = new Claim(AuthConstants.ClaimTypes.IsAdmin, true.ToString());
 
                 await userManager.AddClaimAsync(adminUser, isAdminClaim);
+
+                return (adminEmail, adminPassword).Some();
             }
 
-            return (adminEmail, adminPassword);
+            return default;
+        }
+
+        public static void EnsureEventStoreIsCreated(IConfiguration configuration)
+        {
+            DocumentStore.For(options =>
+            {
+                options.Connection(configuration.GetSection("EventStore")["ConnectionString"]);
+                options.CreateDatabasesForTenants(c =>
+                {
+                    c.ForTenant()
+                        .CheckAgainstPgDatabase()
+                        .WithOwner("postgres")
+                        .WithEncoding("UTF-8")
+                        .ConnectionLimit(-1);
+                });
+            });
         }
 
         private static async Task<bool> AccountExists(string email, UserManager<User> userManager)

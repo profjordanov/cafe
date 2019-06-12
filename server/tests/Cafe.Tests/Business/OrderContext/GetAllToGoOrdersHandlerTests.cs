@@ -10,11 +10,11 @@ namespace Cafe.Tests.Business.OrderContext
 {
     public class GetAllToGoOrdersHandlerTests : ResetDatabaseLifetime
     {
-        private readonly SliceFixture _fixture;
+        private readonly AppFixture _fixture;
 
         public GetAllToGoOrdersHandlerTests()
         {
-            _fixture = new SliceFixture();
+            _fixture = new AppFixture();
         }
 
         [Theory]
@@ -31,16 +31,15 @@ namespace Cafe.Tests.Business.OrderContext
             var queryToTest = new GetAllToGoOrders();
 
             // Act
-            var result = await _fixture.SendAsync(queryToTest);
+            var orders = await _fixture.SendAsync(queryToTest);
 
             // Assert
-            result.Exists(ordersResult =>
-                ordersResult.All(o => ordersToAdd
-                    .SingleOrDefault(addedOrder =>
-                        o.Id == addedOrder.Id &&
-                        o.Status == addedOrder.Status &&
-                        o.OrderedItems.Count == addedOrder.OrderedItems.Count &&
-                        o.OrderedItems.Sum(i => i.Price) == addedOrder.OrderedItems.Sum(i => i.MenuItem.Price)) != null))
+            orders.All(o => ordersToAdd
+                .SingleOrDefault(addedOrder =>
+                    o.Id == addedOrder.Id &&
+                    o.Status == addedOrder.Status &&
+                    o.OrderedItems.Count == addedOrder.OrderedItems.Count &&
+                    o.OrderedItems.Sum(i => i.Price) == addedOrder.OrderedItems.Sum(i => i.MenuItem.Price)) != null)
             .ShouldBeTrue();
         }
 
@@ -52,10 +51,10 @@ namespace Cafe.Tests.Business.OrderContext
             // Purposefully not adding any orders
 
             // Act
-            var result = await _fixture.SendAsync(query);
+            var orders = await _fixture.SendAsync(query);
 
             // Assert
-            result.Exists(orders => orders.Count == 0).ShouldBeTrue();
+            (orders.Count == 0).ShouldBeTrue();
         }
     }
 }

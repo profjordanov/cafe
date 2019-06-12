@@ -1,38 +1,40 @@
-﻿using Cafe.Core.AuthContext;
+﻿using Cafe.Api.Hateoas.Resources;
+using Cafe.Api.Hateoas.Resources.Cashier;
+using Cafe.Core.AuthContext;
 using Cafe.Core.CashierContext.Commands;
 using Cafe.Core.CashierContext.Queries;
+using Cafe.Domain.Views;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Optional.Async;
 using System.Threading.Tasks;
 
 namespace Cafe.Api.Controllers
 {
     public class CashierController : ApiController
     {
-        private readonly IMediator _mediator;
-
-        public CashierController(IMediator mediator)
+        public CashierController(IResourceMapper resourceMapper, IMediator mediator)
+            : base(resourceMapper, mediator)
         {
-            _mediator = mediator;
         }
 
         /// <summary>
         /// Retrieves a list of all currently employed cashiers in the café.
         /// </summary>
-        [HttpGet]
+        [HttpGet(Name = nameof(GetEmployedCashiers))]
         [Authorize(Policy = AuthConstants.Policies.IsAdminOrManager)]
-        public async Task<IActionResult> GetEmployedCashiers() =>
-            (await _mediator.Send(new GetEmployedCashiers()))
-            .Match(Ok, Error);
+        public Task<IActionResult> GetEmployedCashiers() =>
+            ResourceContainerResult<CashierView, CashierResource, CashierContainerResource>(new GetEmployedCashiers());
 
         /// <summary>
         /// Hires a cashier in the café.
         /// </summary>
-        [HttpPost("hire")]
+        [HttpPost(Name = nameof(HireCashier))]
         [Authorize(Policy = AuthConstants.Policies.IsAdminOrManager)]
         public async Task<IActionResult> HireCashier([FromBody] HireCashier command) =>
-            (await _mediator.Send(command))
-            .Match(Ok, Error);
+            (await Mediator.Send(command)
+                .MapAsync(ToEmptyResourceAsync<HireCashierResource>))
+                .Match(Ok, Error);
     }
 }

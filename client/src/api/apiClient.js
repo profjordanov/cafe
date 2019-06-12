@@ -1,7 +1,7 @@
 import { toast } from "react-toastify";
 import history from "../history";
 
-export const BASE_URL = process.env.REACT_APP_API_URL + "api";
+export const BASE_URL = process.env.REACT_APP_API_URL;
 
 export function post(url, body) {
   return fetchWrapper(url, "POST", body);
@@ -15,12 +15,16 @@ export function get(url) {
   return fetchWrapper(url, "GET");
 }
 
+export function httpDelete(url) {
+  return fetchWrapper(url, "DELETE");
+}
+
 function fetchWrapper(url, method, body) {
   return fetch(url, {
     method,
+    credentials: "include",
     headers: {
       Accept: "application/json",
-      Authorization: getAccessToken(),
       "Content-Type": "application/json"
     },
     body: body && JSON.stringify(body)
@@ -30,17 +34,21 @@ function fetchWrapper(url, method, body) {
 }
 
 async function handleResponse(response) {
-  if (response.status === 401) {
+  if (response.status === 401 || response.status === 403) {
     handleUnauthorized();
     return Promise.reject("Unauthorized.");
   }
 
-  const responseToJson = await response.json();
+  const contentType = response.headers.get("content-type");
 
-  if (response.ok) {
-    return responseToJson;
-  } else {
-    throw responseToJson;
+  if (contentType && contentType.indexOf("application/json") !== -1) {
+    const responseToJson = await response.json();
+
+    if (response.ok) {
+      return responseToJson;
+    } else {
+      throw responseToJson;
+    }
   }
 }
 
@@ -58,9 +66,4 @@ function handleError(error) {
   }
 
   throw error;
-}
-
-function getAccessToken() {
-  const token = localStorage.getItem("access_token");
-  return token && `Bearer ${token}`;
 }

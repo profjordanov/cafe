@@ -23,12 +23,15 @@ const CashierPage = ({
   const [selectedItems, setSelectedItems] = useState([]);
   const [paidPrices, setPaidPrices] = useState({});
 
-  const handleMenuItemSelected = itemNumbers => {
-    setSelectedItems(itemNumbers);
+  const handleMenuItemSelected = items => {
+    setSelectedItems(items);
   };
 
   const handleIssueOrder = selectedItems => {
-    issueToGoOrder(selectedItems);
+    issueToGoOrder(
+      selectedItems.flatMap(i => Array(i.count).fill(i.item.number))
+    );
+    setSelectedItems([]);
   };
 
   const handlePricePaidChange = (orderId, event) => {
@@ -51,17 +54,18 @@ const CashierPage = ({
 
   return (
     <div>
-      <h2>Cashier</h2>
+      {pendingOrders.length > 0 && (
+        <PendingOrdersList
+          pendingOrders={pendingOrders}
+          onPricePaidChange={handlePricePaidChange}
+          onOrderConfirmation={handleOrderConfirmation}
+        />
+      )}
       <ToGoOrderForm
         menuItems={menuItems}
         selectedItems={selectedItems}
         onSelectedItemsChanged={handleMenuItemSelected}
         onSubmit={handleIssueOrder}
-      />
-      <PendingOrdersList
-        pendingOrders={pendingOrders}
-        onPricePaidChange={handlePricePaidChange}
-        onOrderConfirmation={handleOrderConfirmation}
       />
     </div>
   );

@@ -17,9 +17,9 @@ namespace Cafe.Tests.Business.TabContext.Helpers
 {
     public class TabTestsHelper
     {
-        private readonly SliceFixture _fixture;
+        private readonly AppFixture _fixture;
 
-        public TabTestsHelper(SliceFixture fixture)
+        public TabTestsHelper(AppFixture fixture)
         {
             _fixture = fixture;
         }
@@ -49,7 +49,7 @@ namespace Cafe.Tests.Business.TabContext.Helpers
                 ItemNumbers = itemNumbers
             };
 
-            await _fixture.SendAsync(orderItems);
+            var result = await _fixture.SendAsync(orderItems);
         }
 
         public async Task ServeMenuItems(Guid tabId, params MenuItem[] items)
